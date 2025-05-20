@@ -27,7 +27,9 @@
 // }
 //
 // export default App;
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+
 import {
   login,
   runArchive,
@@ -43,6 +45,78 @@ function App() {
   const [archivedData, setArchivedData] = useState([]);
   const [configs, setConfigs] = useState([]);
   const [message, setMessage] = useState('');
+
+
+const API_BASE = 'http://44.211.192.140:8080'; // Replace with your backend IP if it changes
+
+function App() {
+  const [healthStatus, setHealthStatus] = useState('Checking...');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginStatus, setLoginStatus] = useState('');
+  const [token, setToken] = useState('');
+
+  // Health Check
+  useEffect(() => {
+    axios.get(`${API_BASE}/actuator/health`)
+      .then(res => {
+        if (res.data.status === 'UP') setHealthStatus('✅ UP');
+        else setHealthStatus('⚠️ Not Healthy');
+      })
+      .catch(() => setHealthStatus('❌ DOWN'));
+  }, []);
+
+  // Login
+  const handleLogin = async () => {
+    try {
+      const res = await axios.post(`${API_BASE}/api/auth/login`, {
+        username,
+        password
+      });
+      setLoginStatus('✅ Login Success');
+      setToken(res.data.token);
+    } catch (err) {
+      setLoginStatus('❌ Login Failed');
+    }
+  };
+
+  return (
+    <div style={{ padding: '2rem', fontFamily: 'sans-serif', backgroundColor: '#111', color: 'white' }}>
+      <h1>Data Archival Dashboard</h1>
+
+      <p><strong>Health Check:</strong> {healthStatus}</p>
+
+      <hr style={{ margin: '1rem 0' }} />
+
+      <div>
+        <h2>Login</h2>
+        <input
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          style={{ marginRight: '1rem' }}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={{ marginRight: '1rem' }}
+        />
+        <button onClick={handleLogin}>Login</button>
+        <p><strong>Status:</strong> {loginStatus}</p>
+      </div>
+
+      {token && (
+        <div>
+          <h3>JWT Token</h3>
+          <textarea value={token} readOnly rows={5} style={{ width: '100%' }} />
+        </div>
+      )}
+    </div>
+  );
+}
 
   const handleLogin = async () => {
     try {
