@@ -1,57 +1,57 @@
 import axios from 'axios';
 
-const BASE = 'http://44.211.192.140:8080/data-archival-service/api';
+const BASE_URL = 'http://44.211.192.140:8080/api';
 
-//const BASE = process.env.REACT_APP_API_BASE;
-
-export const register = (data) =>
-  fetch(`${BASE}/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+export const login = async (username, password) => {
+  const res = await axios.post(`${BASE_URL}/auth/login`, {
+    username,
+    password
   });
-
-export const login = async (data) => {
-  const res = await fetch(`${BASE}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  return await res.json();
+  return res.data; // Expected: { token: "..." }
 };
 
-export const saveConfig = (data, token) =>
-  fetch(`${BASE}/archival/config`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
+export const register = async (username, password, role = "User") => {
+  const res = await axios.post(`${BASE_URL}/auth/register`, {
+    username,
+    password,
+    roles: role // Schema says "Admin", "User", "Student", "Teacher"
   });
+  return res.data;
+};
 
-export const getConfigs = (token) =>
-  fetch(`${BASE}/archival/config`, {
-    headers: { Authorization: `Bearer ${token}` },
-  }).then((res) => res.json());
-
-export const runArchive = (token) =>
-  fetch(`${BASE}/archival/run`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
+export const runArchive = async (token) => {
+  const res = await axios.post(`${BASE_URL}/archival/run`, {}, {
+    headers: { Authorization: `Bearer ${token}` }
   });
+  return res.data;
+};
 
-export const runDelete = (data, token) =>
-  fetch(`${BASE}/archival/delete`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
+export const runDelete = async (token, deletionRequest) => {
+  // deletionRequest = { sourceTable, cutoffDate, pageSize }
+  const res = await axios.post(`${BASE_URL}/archival/delete`, deletionRequest, {
+    headers: { Authorization: `Bearer ${token}` }
   });
+  return res.data;
+};
 
-export const viewArchivedData = (table, token) =>
-  fetch(`${BASE}/archival/view/${table}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  }).then((res) => res.json());
+export const saveConfig = async (token, config) => {
+  // config = { archiveAfterMonths, deleteAfterMonths, pageSize, tableName, criteriaColumn }
+  const res = await axios.post(`${BASE_URL}/archival/config`, config, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.data;
+};
+
+export const getConfigs = async (token) => {
+  const res = await axios.get(`${BASE_URL}/archival/config`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.data;
+};
+
+export const viewArchived = async (token, tableName) => {
+  const res = await axios.get(`${BASE_URL}/archival/view/${tableName}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.data;
+};

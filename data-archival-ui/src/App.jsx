@@ -1,199 +1,159 @@
-// import { useState } from 'react';
-// import { runArchive, viewArchivedData } from './services/api';
-//
-// function App() {
-//   const [message, setMessage] = useState('');
-//   const [archivedData, setArchivedData] = useState([]);
-//
-//   const handleArchive = async () => {
-//     const res = await runArchive();
-//     setMessage(res.message);
-//   };
-//
-//   const handleView = async () => {
-//     const data = await viewArchived();
-//     setArchivedData(data);
-//   };
-//
-//   return (
-//     <div style={{ padding: 20 }}>
-//       <h1>Data Archival Service</h1>
-//       <button onClick={handleArchive}>Run Archive</button>
-//       <button onClick={handleView}>View Archived</button>
-//       <p>{message}</p>
-//       <pre>{JSON.stringify(archivedData, null, 2)}</pre>
-//     </div>
-//   );
-// }
-//
-// export default App;
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-
 import {
   login,
+  register,
   runArchive,
   runDelete,
-  viewArchivedData,
   saveConfig,
   getConfigs,
+  viewArchived
 } from './services/api';
 
 function App() {
-  const [token, setToken] = useState('');
-  const [loginDetails, setLoginDetails] = useState({ username: '', password: '' });
-  const [archivedData, setArchivedData] = useState([]);
-  const [configs, setConfigs] = useState([]);
-  const [message, setMessage] = useState('');
-
-
-const API_BASE = 'http://44.211.192.140:8080'; // Replace with your backend IP if it changes
-
-function App() {
-  const [healthStatus, setHealthStatus] = useState('Checking...');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [loginStatus, setLoginStatus] = useState('');
+  const [role, setRole] = useState('User');
   const [token, setToken] = useState('');
+  const [status, setStatus] = useState('');
+  const [message, setMessage] = useState('');
+  const [archivedData, setArchivedData] = useState([]);
+  const [configs, setConfigs] = useState([]);
 
-  // Health Check
-  useEffect(() => {
-    axios.get(`${API_BASE}/actuator/health`)
-      .then(res => {
-        if (res.data.status === 'UP') setHealthStatus('✅ UP');
-        else setHealthStatus('⚠️ Not Healthy');
-      })
-      .catch(() => setHealthStatus('❌ DOWN'));
-  }, []);
-
-  // Login
-  const handleLogin = async () => {
-    try {
-      const res = await axios.post(`${API_BASE}/api/auth/login`, {
-        username,
-        password
-      });
-      setLoginStatus('✅ Login Success');
-      setToken(res.data.token);
-    } catch (err) {
-      setLoginStatus('❌ Login Failed');
-    }
-  };
-
-  return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif', backgroundColor: '#111', color: 'white' }}>
-      <h1>Data Archival Dashboard</h1>
-
-      <p><strong>Health Check:</strong> {healthStatus}</p>
-
-      <hr style={{ margin: '1rem 0' }} />
-
-      <div>
-        <h2>Login</h2>
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          style={{ marginRight: '1rem' }}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ marginRight: '1rem' }}
-        />
-        <button onClick={handleLogin}>Login</button>
-        <p><strong>Status:</strong> {loginStatus}</p>
-      </div>
-
-      {token && (
-        <div>
-          <h3>JWT Token</h3>
-          <textarea value={token} readOnly rows={5} style={{ width: '100%' }} />
-        </div>
-      )}
-    </div>
-  );
-}
+  const [deleteInput, setDeleteInput] = useState({ sourceTable: '', cutoffDate: '', pageSize: 50 });
+  const [configInput, setConfigInput] = useState({
+    archiveAfterMonths: 6,
+    deleteAfterMonths: 12,
+    pageSize: 50,
+    tableName: '',
+    criteriaColumn: ''
+  });
+  const [tableToView, setTableToView] = useState('');
 
   const handleLogin = async () => {
     try {
-      const data = await login(loginDetails.username, loginDetails.password);
-      setToken(data.token);
-      setMessage('Login successful');
+      const res = await login(username, password);
+      setToken(res.token);
+      setStatus('✅ Login Successful');
     } catch (err) {
-      setMessage('Login failed');
+      setStatus('❌ Login Failed');
     }
   };
 
-  const handleRunArchive = async () => {
-    const res = await runArchive(token);
-    setMessage(res.message || 'Archive completed');
+  const handleRegister = async () => {
+    try {
+      await register(username, password, role);
+      setStatus('✅ Registered Successfully');
+    } catch (err) {
+      setStatus('❌ Registration Failed');
+    }
   };
 
-  const handleRunDelete = async () => {
-    const res = await runDelete(token);
-    setMessage(res.message || 'Delete completed');
+  const handleArchive = async () => {
+    try {
+      const res = await runArchive(token);
+      setMessage(res);
+    } catch (err) {
+      setMessage('❌ Archive Failed');
+    }
   };
 
-  const handleViewArchived = async () => {
-    const data = await viewArchived(token);
-    setArchivedData(data);
+  const handleDelete = async () => {
+    try {
+      const res = await runDelete(token, deleteInput);
+      setMessage(res);
+    } catch (err) {
+      setMessage('❌ Delete Failed');
+    }
   };
 
   const handleSaveConfig = async () => {
-    const res = await saveConfig(token);
-    setMessage(res.message || 'Config saved');
+    try {
+      const res = await saveConfig(token, configInput);
+      setMessage(res);
+    } catch (err) {
+      setMessage('❌ Save Config Failed');
+    }
   };
 
   const handleGetConfigs = async () => {
-    const data = await getConfigs(token);
-    setConfigs(data);
+    try {
+      const data = await getConfigs(token);
+      setConfigs(data);
+    } catch (err) {
+      setMessage('❌ Get Configs Failed');
+    }
+  };
+
+  const handleViewArchived = async () => {
+    try {
+      const data = await viewArchived(token, tableToView);
+      setArchivedData(data);
+    } catch (err) {
+      setMessage('❌ View Archived Data Failed');
+    }
   };
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1>Data Archival Dashboard</h1>
+    <div style={{ padding: '2rem', fontFamily: 'sans-serif', backgroundColor: '#111', color: '#fff' }}>
+      <h1>📦 Data Archival Dashboard</h1>
+      <p><strong>Status:</strong> {status}</p>
 
-      <h3>Login</h3>
-      <input
-        type="text"
-        placeholder="Username"
-        value={loginDetails.username}
-        onChange={(e) => setLoginDetails({ ...loginDetails, username: e.target.value })}
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={loginDetails.password}
-        onChange={(e) => setLoginDetails({ ...loginDetails, password: e.target.value })}
-      />
-      <button onClick={handleLogin}>Login</button>
+      <h2>🔐 Auth</h2>
+      <input placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} />
+      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+      <select value={role} onChange={e => setRole(e.target.value)}>
+        <option value="User">User</option>
+        <option value="Admin">Admin</option>
+        <option value="Student">Student</option>
+        <option value="Teacher">Teacher</option>
+      </select>
+      <div>
+        <button onClick={handleLogin}>Login</button>
+        <button onClick={handleRegister}>Register</button>
+      </div>
 
-      <hr />
+      {token && (
+        <>
+          <hr />
+          <h2>📤 Archive & Delete</h2>
+          <button onClick={handleArchive}>Run Archive</button>
 
-      <h3>Actions</h3>
-      <button onClick={handleRunArchive}>Run Archive</button>
-      <button onClick={handleRunDelete}>Run Delete</button>
-      <button onClick={handleViewArchived}>View Archived Data</button>
-      <button onClick={handleSaveConfig}>Save Config</button>
-      <button onClick={handleGetConfigs}>Get Configs</button>
+          <div>
+            <h3>Delete</h3>
+            <input placeholder="Source Table" value={deleteInput.sourceTable} onChange={e => setDeleteInput({ ...deleteInput, sourceTable: e.target.value })} />
+            <input type="date" value={deleteInput.cutoffDate} onChange={e => setDeleteInput({ ...deleteInput, cutoffDate: e.target.value })} />
+            <input type="number" placeholder="Page Size" value={deleteInput.pageSize} onChange={e => setDeleteInput({ ...deleteInput, pageSize: parseInt(e.target.value) })} />
+            <button onClick={handleDelete}>Run Delete</button>
+          </div>
 
-      <p><b>Status:</b> {message}</p>
+          <hr />
+          <h2>⚙️ Config Management</h2>
+          <input placeholder="Table Name" value={configInput.tableName} onChange={e => setConfigInput({ ...configInput, tableName: e.target.value })} />
+          <input placeholder="Criteria Column" value={configInput.criteriaColumn} onChange={e => setConfigInput({ ...configInput, criteriaColumn: e.target.value })} />
+          <input type="number" placeholder="Archive After Months" value={configInput.archiveAfterMonths} onChange={e => setConfigInput({ ...configInput, archiveAfterMonths: parseInt(e.target.value) })} />
+          <input type="number" placeholder="Delete After Months" value={configInput.deleteAfterMonths} onChange={e => setConfigInput({ ...configInput, deleteAfterMonths: parseInt(e.target.value) })} />
+          <input type="number" placeholder="Page Size" value={configInput.pageSize} onChange={e => setConfigInput({ ...configInput, pageSize: parseInt(e.target.value) })} />
+          <div>
+            <button onClick={handleSaveConfig}>Save Config</button>
+            <button onClick={handleGetConfigs}>Get Configs</button>
+          </div>
 
-      <hr />
+          <pre style={{ background: '#222', padding: '1rem', marginTop: '1rem' }}>
+            {JSON.stringify(configs, null, 2)}
+          </pre>
 
-      <h3>Archived Data</h3>
-      <pre style={{ backgroundColor: '#eee', padding: '1rem' }}>
-        {JSON.stringify(archivedData, null, 2)}
-      </pre>
+          <hr />
+          <h2>📄 View Archived</h2>
+          <input placeholder="Table Name" value={tableToView} onChange={e => setTableToView(e.target.value)} />
+          <button onClick={handleViewArchived}>View Archived Data</button>
 
-      <h3>Configs</h3>
-      <pre style={{ backgroundColor: '#eef', padding: '1rem' }}>
-        {JSON.stringify(configs, null, 2)}
-      </pre>
+          <pre style={{ background: '#222', padding: '1rem', marginTop: '1rem' }}>
+            {JSON.stringify(archivedData, null, 2)}
+          </pre>
+
+          <p style={{ color: 'lightgreen' }}>{message}</p>
+        </>
+      )}
     </div>
   );
 }
