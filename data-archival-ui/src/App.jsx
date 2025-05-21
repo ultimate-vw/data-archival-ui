@@ -1,161 +1,89 @@
-import { useState, useEffect } from 'react';
-import {
-  login,
-  register,
-  runArchive,
-  runDelete,
-  saveConfig,
-  getConfigs,
-  viewArchived
-} from './services/api';
+import React from "react";
 
-function App() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('User');
-  const [token, setToken] = useState('');
-  const [status, setStatus] = useState('');
-  const [message, setMessage] = useState('');
-  const [archivedData, setArchivedData] = useState([]);
-  const [configs, setConfigs] = useState([]);
-
-  const [deleteInput, setDeleteInput] = useState({ sourceTable: '', cutoffDate: '', pageSize: 50 });
-  const [configInput, setConfigInput] = useState({
-    archiveAfterMonths: 6,
-    deleteAfterMonths: 12,
-    pageSize: 50,
-    tableName: '',
-    criteriaColumn: ''
-  });
-  const [tableToView, setTableToView] = useState('');
-
-  const handleLogin = async () => {
-    try {
-      const res = await login(username, password);
-      setToken(res.token);
-      setStatus('✅ Login Successful');
-    } catch (err) {
-      setStatus('❌ Login Failed');
-    }
-  };
-
-  const handleRegister = async () => {
-    try {
-      await register(username, password, role);
-      setStatus('✅ Registered Successfully');
-    } catch (err) {
-      setStatus('❌ Registration Failed');
-    }
-  };
-
-  const handleArchive = async () => {
-    try {
-      const res = await runArchive(token);
-      setMessage(res);
-    } catch (err) {
-      setMessage('❌ Archive Failed');
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      const res = await runDelete(token, deleteInput);
-      setMessage(res);
-    } catch (err) {
-      setMessage('❌ Delete Failed');
-    }
-  };
-
-  const handleSaveConfig = async () => {
-    try {
-      const res = await saveConfig(token, configInput);
-      setMessage(res);
-    } catch (err) {
-      setMessage('❌ Save Config Failed');
-    }
-  };
-
-  const handleGetConfigs = async () => {
-    try {
-      const data = await getConfigs(token);
-      setConfigs(data);
-    } catch (err) {
-      setMessage('❌ Get Configs Failed');
-    }
-  };
-
-  const handleViewArchived = async () => {
-    try {
-      const data = await viewArchived(token, tableToView);
-      setArchivedData(data);
-    } catch (err) {
-      setMessage('❌ View Archived Data Failed');
-    }
-  };
-
+const Dashboard = () => {
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif', backgroundColor: '#111', color: '#fff' }}>
-      <h1>📦 Data Archival Dashboard</h1>
-      <p><strong>Status:</strong> {status}</p>
+    <div style={{ fontFamily: "sans-serif", padding: "20px" }}>
+      <header style={{ background: "#222", color: "#fff", padding: "10px 20px", marginBottom: "20px" }}>
+        <h1 style={{ margin: 0 }}>Data Archival Service</h1>
+        <a
+          href="https://github.com/ultimate-vw/data-archival-service"
+          style={{ color: "#61dafb", textDecoration: "none" }}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          GitHub Repo
+        </a>
+      </header>
 
-      <h2>🔐 Auth</h2>
-      <input placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} />
-      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
-      <select value={role} onChange={e => setRole(e.target.value)}>
-        <option value="User">User</option>
-        <option value="Admin">Admin</option>
-        <option value="Student">Student</option>
-        <option value="Teacher">Teacher</option>
-      </select>
-      <div>
-        <button onClick={handleLogin}>Login</button>
-        <button onClick={handleRegister}>Register</button>
-      </div>
+      <h2>🔗 Quick Links</h2>
+      <ul>
+        <li>
+          <a href="http://3.85.130.148:8080/swagger-ui/index.html" target="_blank" rel="noopener noreferrer">
+            Swagger UI
+          </a>
+        </li>
+        <li>
+          <a href="http://3.85.130.148:8080/actuator/health" target="_blank" rel="noopener noreferrer">
+            Health Check
+          </a>
+        </li>
+        <li>
+          <a href="http://3.85.130.148:8080/v3/api-docs" target="_blank" rel="noopener noreferrer">
+            OpenAPI v3 Docs
+          </a>
+        </li>
+      </ul>
 
-      {token && (
-        <>
-          <hr />
-          <h2>📤 Archive & Delete</h2>
-          <button onClick={handleArchive}>Run Archive</button>
+      <h2>🧪 Curl Commands (with Token)</h2>
+      <pre style={{ background: "#808080", padding: "10px" }}>
+        {`
+# Step 1: Login and get JWT token
+TOKEN=$(curl -s -X POST http://3.85.130.148:8080/api/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{ "username": "your_username", "password": "your_password" }' | jq -r '.token')
 
-          <div>
-            <h3>Delete</h3>
-            <input placeholder="Source Table" value={deleteInput.sourceTable} onChange={e => setDeleteInput({ ...deleteInput, sourceTable: e.target.value })} />
-            <input type="date" value={deleteInput.cutoffDate} onChange={e => setDeleteInput({ ...deleteInput, cutoffDate: e.target.value })} />
-            <input type="number" placeholder="Page Size" value={deleteInput.pageSize} onChange={e => setDeleteInput({ ...deleteInput, pageSize: parseInt(e.target.value) })} />
-            <button onClick={handleDelete}>Run Delete</button>
-          </div>
+# Step 2: Register new user
+curl -X POST http://3.85.130.148:8080/api/auth/register \\
+  -H "Content-Type: application/json" \\
+  -d '{ "username": "new_user", "password": "password", "roles": "User" }'
 
-          <hr />
-          <h2>⚙️ Config Management</h2>
-          <input placeholder="Table Name" value={configInput.tableName} onChange={e => setConfigInput({ ...configInput, tableName: e.target.value })} />
-          <input placeholder="Criteria Column" value={configInput.criteriaColumn} onChange={e => setConfigInput({ ...configInput, criteriaColumn: e.target.value })} />
-          <input type="number" placeholder="Archive After Months" value={configInput.archiveAfterMonths} onChange={e => setConfigInput({ ...configInput, archiveAfterMonths: parseInt(e.target.value) })} />
-          <input type="number" placeholder="Delete After Months" value={configInput.deleteAfterMonths} onChange={e => setConfigInput({ ...configInput, deleteAfterMonths: parseInt(e.target.value) })} />
-          <input type="number" placeholder="Page Size" value={configInput.pageSize} onChange={e => setConfigInput({ ...configInput, pageSize: parseInt(e.target.value) })} />
-          <div>
-            <button onClick={handleSaveConfig}>Save Config</button>
-            <button onClick={handleGetConfigs}>Get Configs</button>
-          </div>
+# Step 3: Trigger archival
+curl -X POST http://3.85.130.148:8080/api/archival/run \\
+  -H "Authorization: Bearer $TOKEN"
 
-          <pre style={{ background: '#222', padding: '1rem', marginTop: '1rem' }}>
-            {JSON.stringify(configs, null, 2)}
-          </pre>
+# Step 4: View archival configs
+curl -X GET http://3.85.130.148:8080/api/archival/config \\
+  -H "Authorization: Bearer $TOKEN"
 
-          <hr />
-          <h2>📄 View Archived</h2>
-          <input placeholder="Table Name" value={tableToView} onChange={e => setTableToView(e.target.value)} />
-          <button onClick={handleViewArchived}>View Archived Data</button>
+# Step 5: View archived data for a table
+curl -X GET http://3.85.130.148:8080/api/archival/view/student \\
+  -H "Authorization: Bearer $TOKEN"
 
-          <pre style={{ background: '#222', padding: '1rem', marginTop: '1rem' }}>
-            {JSON.stringify(archivedData, null, 2)}
-          </pre>
+# Step 6: Delete old data
+curl -X POST http://3.85.130.148:8080/api/archival/delete \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "sourceTable": "student", "cutoffDate": "2024-01-01", "pageSize": 100 }'
+        `}
+      </pre>
 
-          <p style={{ color: 'lightgreen' }}>{message}</p>
-        </>
-      )}
+      <h2>📋 Summary</h2>
+      <p>
+        This Data Archival Service was designed to support microservice-based applications with flexible data retention
+        policies. It uses PostgreSQL as the backend and offers scheduled archival and deletion logic configurable per
+        table. Security is enforced with JWT tokens and role-based access. The entire system is Dockerized and deployed
+        on AWS ECS with CI/CD support.
+      </p>
+
+      <ul>
+        <li>✅ Archive & delete table data based on month threshold</li>
+        <li>✅ REST APIs for all key features</li>
+        <li>✅ Role-based access control using Spring Security</li>
+        <li>✅ Deployment-ready on Linux via Docker</li>
+        <li>✅ Hosted APIs with Swagger, Actuator, and OpenAPI</li>
+      </ul>
     </div>
   );
-}
+};
 
-export default App;
+export default Dashboard;
